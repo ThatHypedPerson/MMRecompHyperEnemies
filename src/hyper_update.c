@@ -25,6 +25,7 @@ void Hyper_ExtendActors() {
 
 Actor* Actor_UpdateActor(UpdateActor_Params* params);
 
+// the following is mostly derived from OoTMM's Hyper Actor system
 RECOMP_HOOK("Actor_UpdateActor")
 void Hyper_UpdateActor(UpdateActor_Params* params) {
     PlayState* play = params->play;
@@ -32,6 +33,10 @@ void Hyper_UpdateActor(UpdateActor_Params* params) {
     Player* player = GET_PLAYER(play);
 
     if (actor->category != ACTORCAT_BOSS && actor->category != ACTORCAT_ENEMY) {
+        return;
+    }
+
+    if (actor->id == ACTOR_EN_DG && !recomp_get_config_u32("include_dogs")) {
         return;
     }
 

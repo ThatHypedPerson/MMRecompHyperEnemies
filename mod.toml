@@ -15,10 +15,10 @@ display_name = "Hyper Enemies"
 
 # The description that will show up when this mod is displayed in the mod menu. This should be human readable.
 description =  """
-This is an example mod for Majora's Mask: Recompiled that can be used as a template for creating mods. \
-When this mod is enabled, you will always perform a quickspin when swinging your sword.
+This mod lets you turn enemies/bosses throughout the game into "hyper" versions by making them faster.
 
-For more details, see https://github.com/Zelda64Recomp/MMRecompModTemplate."""
+You can adjust how much faster enemies are via this mod's config options.
+"""
 
 # A short description that will show up in this mod's entry in the mod list. This should be human readable and kept short
 # to prevent it from being cut off due to the limited space.
@@ -79,3 +79,11 @@ step = 1
 precision = 1
 percent = false
 default = 2
+
+[[manifest.config_options]]
+id = "include_dogs"
+name = "Enable Hyper Dogs"
+description = "Dogs are considered enemies internally, so this option lets you speed them up as well."
+type = "Enum"
+options = [ "Disabled", "Enabled" ]
+default = "Disabled"
