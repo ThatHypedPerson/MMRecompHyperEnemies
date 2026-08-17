@@ -48,7 +48,10 @@ void Hyper_UpdateActor(UpdateActor_Params* params) {
     *hyperCount += 1;
 
     if (*hyperCount < HYPER_UPDATES) {
+        bool prev = play->frameAdvCtx.enabled;
+        play->frameAdvCtx.enabled = true;
         Actor_UpdateActor(params);
+        play->frameAdvCtx.enabled = prev;
     } else {
         *hyperCount = 0;
     }
