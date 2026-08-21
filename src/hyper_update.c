@@ -6,53 +6,46 @@
 
 #define HYPER_UPDATES recomp_get_config_u32("update_rate")
 
-typedef struct {
-    /* 0x00 */ PlayState* play;
-    /* 0x04 */ Actor* actor;
-    /* 0x08 */ u32 freezeExceptionFlag;
-    /* 0x0C */ u32 canFreezeCategory;
-    /* 0x10 */ Actor* talkActor;
-    /* 0x14 */ Player* player;
-    /* 0x18 */ u32 updateActorFlagsMask; // Actor will update only if at least 1 actor flag is set in this bitmask
-} UpdateActor_Params;                    // size = 0x1C
+// the following is mostly derived from OoTMM's Hyper Actor system
 
-ActorExtensionId hyperUpdateCountExtension;
+bool Hyper_ShouldApply(PlayState* play, Actor* actor) {
+    bool should = false;
+    
+    Player* player = GET_PLAYER(play);
+    if (Player_InBlockingCsMode(play, player)) {
+        return false;
+    }
 
-RECOMP_CALLBACK("*", recomp_on_init) 
-void Hyper_ExtendActors() {
-    hyperUpdateCountExtension = z64recomp_extend_actor_all(sizeof(u32));
+    if (actor->category == ACTORCAT_BOSS || actor->category == ACTORCAT_ENEMY) {
+        should = true;
+    }
+
+    // dogs are enemies
+    if (actor->id == ACTOR_EN_DG && !recomp_get_config_u32("include_dogs")) {
+        should = false;
+    }
+    
+    // flying pots are not enemies
+    if (actor->id == ACTOR_EN_TUBO_TRAP) {
+        should = true;
+    }
+
+    return should;
 }
 
-Actor* Actor_UpdateActor(UpdateActor_Params* params);
+// this function happens after actor->update(actor, play) in Actor_UpdateActor
+RECOMP_HOOK("DynaPoly_UnsetAllInteractFlags")
+void Hyper_UpdateActor(PlayState* play, DynaCollisionContext* dyna, Actor* actor) {
+    if (!Hyper_ShouldApply(play, actor)) return;
 
-// the following is mostly derived from OoTMM's Hyper Actor system
-RECOMP_HOOK("Actor_UpdateActor")
-void Hyper_UpdateActor(UpdateActor_Params* params) {
-    PlayState* play = params->play;
-    Actor* actor = params->actor;
-    Player* player = GET_PLAYER(play);
+    bool prev = play->frameAdvCtx.enabled;
+    play->frameAdvCtx.enabled = true;
 
-    if (actor->category != ACTORCAT_BOSS && actor->category != ACTORCAT_ENEMY) {
-        return;
+    for (u32 i = 0; i < HYPER_UPDATES - 1; i++) {
+        if (actor->update != NULL) {
+            actor->update(actor, play);
+        }
     }
 
-    if (actor->id == ACTOR_EN_DG && !recomp_get_config_u32("include_dogs")) {
-        return;
-    }
-
-    if (Player_InBlockingCsMode(play, player)) {
-        return;
-    }
-
-    u32* hyperCount = z64recomp_get_extended_actor_data(actor, hyperUpdateCountExtension);
-    *hyperCount += 1;
-
-    if (*hyperCount < HYPER_UPDATES) {
-        bool prev = play->frameAdvCtx.enabled;
-        play->frameAdvCtx.enabled = true;
-        Actor_UpdateActor(params);
-        play->frameAdvCtx.enabled = prev;
-    } else {
-        *hyperCount = 0;
-    }
+    play->frameAdvCtx.enabled = prev;
 }
